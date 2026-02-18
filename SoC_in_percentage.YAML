@@ -1,0 +1,14 @@
+- name: "Battery remaining energy 2026"
+      unique_id: battery_remaining_energy_2026
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: measurement
+      state: "{{ states('input_number.battery_calculated_remaining_energy') | float(0) | round(2) }}"
+      icon: >
+        {% set remaining = states('input_number.battery_calculated_remaining_energy') | float(0) %}
+        {% set total = states('input_number.bat_expected_energy') | float(0) %}
+        {% set soc_pct = (remaining / total * 100) if total > 0 else 0 %}
+        {% if soc_pct >= 90 %} mdi:battery
+        {% elif soc_pct >= 20 %} mdi:battery-medium
+        {% else %} mdi:battery-low
+        {% endif %}

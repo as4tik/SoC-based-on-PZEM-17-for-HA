@@ -1,0 +1,13 @@
+- name: "Bat SoC pz"
+      unique_id: bat_soc_pz
+      unit_of_measurement: "%"
+      device_class: "battery"
+      state_class: "measurement"
+      state: >-
+        {{
+            (
+              states('sensor.battery_remaining_energy_2026')|float(0)
+              / states('input_number.bat_expected_energy') | float(0)
+            * 100
+            ) | round(1)
+        }}
