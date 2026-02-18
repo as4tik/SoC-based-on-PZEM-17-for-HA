@@ -1,0 +1,20 @@
+- name: "bat_pz_discharge_power"
+      unique_id: bat_pz_discharge_power
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      state: >-
+        {% set power = states('sensor.pzem1_pzem1_power') | float(none) | round(0) %}
+        {% set marker = states('sensor.100balance2mqtt_pack_current') | float(none) | round(0) %}
+        {% if power is not none and marker is not none%}
+          {% if marker < 0 %} 
+            {{ ( power ) | round(0) }}
+          {% else %} 
+            0
+          {% endif %}
+        {% else %}
+          unavailable
+        {% endif %}
+      availability: >-
+        {{ has_value('sensor.pzem1_pzem1_power') and 
+        has_value('sensor.100balance2mqtt_pack_current') }}
