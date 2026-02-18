@@ -14,3 +14,8 @@ A shunt may cound the resulting enegry and estimate how much energy is left in y
 
 In the YAML you will find a sensor 'sensor.100balance2mqtt_pack_current'. This is from my BMS, but you may take it from the inverter. It is to add a direction of the current, since the PZEM-17 do not support current direction and all the values are positive alweys, despite it is charge or discharge.
 
+You must create all the input_number sensors via HA helper to have that entities, which are mentioned in the template sensors and automation. Or alternativelly you may hardcode the values itself, if you do not feel to need to check them from time to time.
+
+<img width="398" height="198" alt="image" src="https://github.com/user-attachments/assets/83b48cf3-562b-42f4-a1b0-fedd547360c5" />
+
+
