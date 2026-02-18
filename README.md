@@ -12,5 +12,5 @@ A shunt may cound the resulting enegry and estimate how much energy is left in y
 
 <img width="559" height="479" alt="image" src="https://github.com/user-attachments/assets/b4bfadb9-4431-48da-a179-02f0187267a6" />
 
-
+In the YAML you will find a sensor 'sensor.100balance2mqtt_pack_current'. This is from my BMS, but you may take it from the inverter. It is to add a direction of the current, since the PZEM-17 do not support current direction and all the values are positive alweys, despite it is charge or discharge.
 
