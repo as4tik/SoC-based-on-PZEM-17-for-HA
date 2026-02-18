@@ -1,0 +1,100 @@
+- id: battery_coulomb_counting
+  alias: "Battery: Coulomb Counting (Energy Integration)"
+  mode: queued
+  trigger:
+    - platform: state
+      entity_id:
+        - sensor.bat_pz_energy_charge
+        - sensor.bat_pz_energy_discharge
+  condition:
+    - condition: template
+      value_template: "{% set bad_states = ['unavailable', 'unknown', 'none',
+        'null'] %} {{ trigger.from_state.state not in bad_states and trigger.to_state.state
+        not in bad_states }}"
+  action:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.battery_calculated_remaining_energy
+      data:
+        value:
+          "{% set current_soc = states('input_number.battery_calculated_remaining_energy')
+          | float(0) %} {% set delta = (trigger.to_state.state | float(0)) - (trigger.from_state.state
+          | float(0)) %} {% set efficiency = states('input_number.battery_efficiency')
+          | float(0.91) %} {% set max_energy = states('input_number.bat_expected_energy')
+          | float(17.4) %}           {% if trigger.entity_id == 'sensor.bat_pz_energy_charge'
+          %}\n  {% set new_val = current_soc + (delta * efficiency) %}\n{% else %}\n
+          \ {% set new_val = current_soc - delta %}\n{% endif %}           {# Limitation:
+          not less than 0 і not more than bat_expected_energy #} {{ ([0, new_val, max_energy]
+          | sort)[1] | round(2) }}\n"
+- id: battery_calibration_full
+  alias: "Battery: Calibration at 100%"
+  description:
+    Resets the capacity helper to maximum when full charge conditions are
+    met
+  triggers:
+    - value_template:
+        "{{ states('sensor.pzem1_pzem1_voltage') | float(0) >= states('input_number.battery_charge_voltage_point')
+        | float(0) }}"
+      trigger: template
+  conditions:
+    - condition: numeric_state
+      entity_id: sensor.pzem1_pzem1_current
+      below: input_number.battery_current_charge_point
+    - condition: numeric_state
+      entity_id: sensor.bat_pz_discharge_power
+      below: 1
+    - condition: template
+      value_template:
+        "{{ states('input_number.battery_calculated_remaining_energy')
+        | float(0) | round(1)  != states('input_number.bat_expected_energy') | float(0)
+        | round(1) }}"
+  actions:
+    - delay:
+        minutes: "{{ states('input_number.battery_charge_time_point') | int(30) }}"
+    - condition: template
+      value_template:
+        "{{ states('sensor.pzem1_pzem1_voltage') | float(0) >= states('input_number.battery_charge_voltage_point')
+        | float(0)  and states('sensor.pzem1_pzem1_current') | float(0) <= states('input_number.battery_current_charge_point')
+        | float(0)  and states('sensor.bat_pz_discharge_power') | float(0)
+        < 1 }}"
+    - action: notify.send_message
+      target:
+        entity_id: notify.telegram_bot_7861230755_1002447856675
+      data:
+        title: "\U0001F50B Battery charged"
+        message:
+          "Battery calibration is applied.  SoC before correction: {{ states('input_number.battery_calculated_remaining_energy')
+          }} kWh. SoC set to: {{ states('input_number.bat_expected_energy') }} kWh."
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.battery_calculated_remaining_energy
+      data:
+        value:
+          "{{ states('input_number.bat_expected_energy') | float(0) | round(2)
+          }}"
+- id: battery_calibration_low
+  alias: "Battery: Calibration at 0%"
+  description:
+    Resets the capacity helper to minimum when battery voltage is critically
+    low
+  trigger:
+    - platform: numeric_state
+      entity_id: sensor.pzem1_pzem1_voltage
+      below: 46.4
+      for:
+        minutes: 1
+  action:
+    - action: notify.send_message
+      target:
+        entity_id: notify.telegram_bot_7861230755_1002447856675
+      data:
+        title: "\U0001FAAB Battery empty"
+        message:
+          "Critical voltage reached (46.4V).  Energy counter reset to minimum.  SoC
+          before correction: {{ states('input_number.battery_calculated_remaining_energy')
+          }} kWh."
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.battery_calculated_remaining_energy
+      data:
+        value: 0.1
